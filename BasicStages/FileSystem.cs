@@ -1,8 +1,8 @@
 ﻿using LLHandlers;
 using System.Collections.Generic;
-using System.IO;
 using System.Xml;
 using System.Xml.Serialization;
+using System.IO;
 using UnityEngine;
 
 namespace BasicStages
@@ -10,7 +10,7 @@ namespace BasicStages
     static class FileSystem
     {
         //static readonly string SAVE_FOLDER = Application.dataPath + @"/Saves/";
-        public static readonly string SAVE_FOLDER = Path.GetDirectoryName(Application.dataPath) + @"\ModSettings\";
+        public static readonly string SAVE_FOLDER = BasicStages.ModdingDirectory.FullName + "/";
 
         public static void Init()
         {
@@ -59,7 +59,7 @@ namespace BasicStages
                 {
                     new StageColorElement(Stage.NONE,  "#1a1a22", "#27272f"),
                 };
-                Debug.Log("[LLBMM] BasicStages: Could not load \"BasicStageColours.xml\". Using coded colours as a workaround");
+                BasicStages.Log.LogWarning("Could not load \"BasicStageColours.xml\". Using coded colours as a workaround");
                 return stageColorElements;
             }
         }

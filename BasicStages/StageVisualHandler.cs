@@ -24,12 +24,12 @@ namespace BasicStages
             GetColorsForCurrentStage();
             CreateStageMesh(World.instance.GetStageCenter(), World.instance.stageSize);
             BG.StopMatchIntro();
-            Debug.Log("[LLBMM] StageVisualHandler: Created");
+            BasicStages.Log.LogDebug("StageVisualHandler: Created");
         }
 
         void Destroy()
         {
-            Debug.Log("[LLBMM] StageVisualHandler: Destroyed");
+            BasicStages.Log.LogDebug("StageVisualHandler: Destroyed");
         }
 
         static void GetColorsForCurrentStage()
@@ -52,7 +52,7 @@ namespace BasicStages
             {
                 stageBackground = stageTopInside = stageColumnRightInside = stageColumnLeftInside = new Material(Shader.Find("Unlit/Color")) { color = new Color(0.184f, 0.192f, 0.212f) };
                 stageTopFront = stageColumnFront = new Material(Shader.Find("Unlit/Color")) { color = new Color(0.125f, 0.133f, 0.145f) };
-                Debug.Log("[LLBMM] BasicStages: The \"stagecolours\" could not be loaded. Using coded colours as a workaround");
+                BasicStages.Log.LogWarning("The \"stagecolours\" could not be loaded. Using coded colours as a workaround");
             }
 
             for (int i = 0; i < stageColorElements.Count; i++)
@@ -101,7 +101,7 @@ namespace BasicStages
                     txt2 += $"{name.transform.parent.gameObject.name}/{name.name}/ Tag: {name.tag}\n";
                 }
             }
-            Debug.Log(txt2);
+            BasicStages.Log.LogDebug(txt2);
 #endif
             ClearStageAssets(BG.instance.obsEclipse);
             ClearStageAssets(BG.instance.obsNormal);
@@ -292,7 +292,7 @@ namespace BasicStages
 #if DEBUG
                     if (txt != "")
                     {
-                        Debug.Log($"{txt} - Disabled");
+                        BasicStages.Log.LogDebug($"{txt} - Disabled");
                     }
 #endif
                 }

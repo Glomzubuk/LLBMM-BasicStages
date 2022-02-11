@@ -37,7 +37,7 @@ namespace BasicStages
             if (ColorUtility.TryParseHtmlString(htmlColor, out color) == false)
             {
                 color = Color.black;
-                Debug.Log("[LLBM] BasicStages: Failed to load background colour. Is it in the right format? e.g. #1a1a22");
+                BasicStages.Log.LogWarning("Failed to load background colour. Is it in the right format? e.g. #1a1a22");
             }
             return color;
         }
@@ -49,7 +49,7 @@ namespace BasicStages
             if (ColorUtility.TryParseHtmlString(htmlColor, out color) == false)
             {
                 color = Color.black;
-                Debug.Log("[LLBM] BasicStages: Failed to load wall colour. Is it in the right format? e.g. #27272f");
+                BasicStages.Log.LogWarning("Failed to load wall colour. Is it in the right format? e.g. #27272f");
             }
             return color;
         }

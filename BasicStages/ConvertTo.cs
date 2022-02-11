@@ -215,13 +215,13 @@ namespace BasicStages
         /// <returns></returns>
         public static HHBCPNCDNDH DirectionToAngle(IBGCBLLKIHA dir)
         {
-            // Debug.Log("DirectionToAngle " + dir);
+            //BasicStages.Log.LogDebug("DirectionToAngle " + dir);
             HHBCPNCDNDH X = HHBCPNCDNDH.GANELPBAOPN(dir.GCPKPHMKLBN);
             HHBCPNCDNDH Y = dir.CGJJEHPPOAN;
 
-            //Debug.Log(string.Format($"X {X} Y: {Y}"));
+            //BasicStages.Log.LogDebug(string.Format($"X {X} Y: {Y}"));
             HHBCPNCDNDH num = HHBCPNCDNDH.AJOCFFLIIIH(HHBCPNCDNDH.GAFCIOAEGKD(HHBCPNCDNDH.GBGDEABPILN(Y, X), HHBCPNCDNDH.ICMHOBBMHHF), HHBCPNCDNDH.MJLJNMIAIFK);
-            //Debug.Log(string.Format($"Angle: {num}"));
+            //BasicStages.Log.LogDebug(string.Format($"Angle: {num}"));
 
             return num;
         }

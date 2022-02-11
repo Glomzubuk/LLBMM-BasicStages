@@ -2,36 +2,40 @@
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
+using BepInEx;
+using BepInEx.Configuration;
+using BepInEx.Logging;
+using LLBML.Utils;
 
 namespace BasicStages
 {
-    class BasicStages : MonoBehaviour
+    [BepInPlugin(PluginInfos.PLUGIN_ID, PluginInfos.PLUGIN_NAME, PluginInfos.PLUGIN_VERSION)]
+    [BepInDependency(LLBML.PluginInfos.PLUGIN_ID, BepInDependency.DependencyFlags.HardDependency)]
+    [BepInDependency("no.mrgentle.plugins.llb.modmenu", BepInDependency.DependencyFlags.SoftDependency)]
+    [BepInProcess("LLBlaze.exe")]
+    class BasicStages : BaseUnityPlugin
     {
-        private const string modVersion = "1.0.4";
+        #region legacystrings
+        private const string modVersion = PluginInfos.PLUGIN_VERSION;
         private const string repositoryOwner = "Daioutzu";
         private const string repositoryName = "LLBMM-BasicStages";
+        #endregion
 
         public static BasicStages Instance { get; private set; }
-        public static ModMenuIntegration MMI = null;
+        internal static ManualLogSource Log { get; private set; }
         public static bool InGame => World.instance != null && (DNPFJHMAIBP.HHMOGKIMBNM() == JOFJHDJHJGI.CDOFDJMLGLO || DNPFJHMAIBP.HHMOGKIMBNM() == JOFJHDJHJGI.LGILIJKMKOD);
-
-        public static void Initialize()
-        {
-            GameObject gameObject = new GameObject("BasicStages", typeof(BasicStages));
-            Instance = gameObject.GetComponent<BasicStages>();
-            DontDestroyOnLoad(gameObject);
-        }
 
 #if useAssetBundle != true
 
-        private readonly static string resourceFolder = Application.dataPath + "/Managed/BasicStagesResources";
-        private readonly static string bundleLocation = resourceFolder + "/Bundles/bs_materials";
+        internal static DirectoryInfo PluginDirectory { get; private set; }
+        internal static DirectoryInfo ModdingDirectory { get; private set; }
+        private readonly static string bundleLocation = BepInEx.Utility.CombinePaths(PluginDirectory.FullName, "Bundles", "bs_materials");
         private static AssetBundle uiBundle;
         public static Dictionary<string, Material> materialAssets = new Dictionary<string, Material>();
         public static Dictionary<string, Sprite> spriteAssets = new Dictionary<string, Sprite>();
         public static bool bundleLoaded { get; private set; }
 
-        static void LoadAssets()
+        private static void LoadAssets()
         {
             if (File.Exists(bundleLocation))
             {
@@ -44,17 +48,17 @@ namespace BasicStages
                 {
                     materialAssets.Add(materials[i].name, materials[i]);
 #if DEBUG
-                    txt += $"[LLBMM] Material: {materials[i].name}\n";
+                    txt += $"Material: {materials[i].name}\n";
 #endif
                 }
                 bundleLoaded = true;
 #if DEBUG
-                Debug.Log($"{txt}");
+                BasicStages.Log.LogDebug($"{txt}");
 #endif
             }
             else
             {
-                Debug.Log("[LLBMM] BasicStages: The \"stagecolours\" could not be loaded. Using coded colours as a workaround");
+                Log.LogWarning("The \"stagecolours\" could not be loaded. Using coded colours as a workaround");
             }
         }
 
@@ -62,135 +66,70 @@ namespace BasicStages
 
         void Awake()
         {
+            PluginDirectory = new DirectoryInfo(Path.GetDirectoryName(this.Info.Location));
+            ModdingDirectory = ModdingFolder.GetModSubFolder(this.Info);
+            Instance = this;
+            Log = this.Logger;
             FileSystem.Init();
             LoadAssets();
+            AddModOptions();
         }
 
         void Start()
         {
-            if (MMI == null) { MMI = gameObject.AddComponent<ModMenuIntegration>(); Debug.Log("[LLBMM] BasicStages: Added GameObject \"ModMenuIntegration\""); }
-            MMI.OnInitConfig += AddModOptions;
-            Debug.Log("[LLBMM] BasicStages Started");
+            Logger.LogDebug("Started");
         }
 
-        private void AddModOptions(ModMenuIntegration MMI)
+        private ConfigEntry<bool> overrideAllStagesToBasic;
+        private Dictionary<Stage, ConfigEntry<bool>> regularStagesConfig = new Dictionary<Stage, ConfigEntry<bool>>();
+        private Dictionary<Stage, ConfigEntry<bool>> retroStagesConfig = new Dictionary<Stage, ConfigEntry<bool>>();
+        private void AddModOptions()
         {
-            var stageNames = GetStageNames(false);
-            var stage2DNames = GetStageNames(true);
-            MMI.AddToWriteQueue("(bool)overrideAllStagesToBasic", "true");
-            MMI.AddToWriteQueue("(gap)stageGap1", "");
-            MMI.AddToWriteQueue("(header)header1", "Basic Stages");
-            for (int i = 0; i < stageNames.Length; i++)
-            {
-                MMI.AddToWriteQueue($"(bool){stageNames[i]}", "false");
-            }
-            MMI.AddToWriteQueue("(gap)stageGap2", "");
-            MMI.AddToWriteQueue("(header)header2", "Basic Retro Stages");
-            for (int i = 0; i < stage2DNames.Length; i++)
-            {
-                MMI.AddToWriteQueue($"(bool){stage2DNames[i]}", "false");
-            }
-        }
-        void ModMenuInit()
-        {
-            if ((MMI != null && !modIntegrated) || LLModMenu.ModMenu.Instance.inModSubOptions && LLModMenu.ModMenu.Instance.currentOpenMod == gameObject.name)
-            {
+            overrideAllStagesToBasic = this.Config.Bind<bool>("Toggles", "overrideAllStagesToBasic", true);
+            this.Config.Bind<string>("Toggles", "toggles_gap1", "20", new ConfigDescription("", null, "mod_menugap"));
+            this.Config.Bind<string>("Toggles", "toggles_header_basicstages", "Basic Stages", new ConfigDescription("", null, "mod_menuheader"));
 
-                allStageAreBasic = MMI.GetTrueFalse(MMI.configBools["(bool)overrideAllStagesToBasic"]);
-
-                for (int i = 0; i < stageNames.Length; i++)
-                {
-                    stagesBasic[(Stage)i + 3] = MMI.GetTrueFalse(MMI.configBools[$"(bool){stageNames[i]}"]);
-                }
-                for (int i = 0; i < stage2DNames.Length; i++)
-                {
-                    stages2DBasic[(Stage)i + 20] = MMI.GetTrueFalse(MMI.configBools[$"(bool){stage2DNames[i]}"]);
-                }
-                if (!modIntegrated) { Debug.Log("[LLBMM] AdvancedTraining: ModMenuIntegration Done"); };
-                modIntegrated = true;
-            }
-        }
-#if false
-
-        private void NewAddModOptions(ModMenuIntegration mmi)
-        {
-            var stageNames = GetStageNames(false);
-            var stage2DNames = GetStageNames(true);
-            mmi.AddEntryToWriteQueue("overrideAllStagesToBasic", "true", "bool");
-            mmi.AddEntryToWriteQueue("numberOfThings", "10", "int");
-            mmi.AddEntryToWriteQueue("stageGap1", "10", "gap");
-            mmi.AddEntryToWriteQueue("header1", "Basic Stages", "header");
-            for (int i = 0; i < stageNames.Length; i++)
+            foreach (var stageName in regularStagesNames)
             {
-                mmi.AddEntryToWriteQueue($"{stageNames[i]}", "false", "bool");
+                regularStagesConfig.Add(stageName.Key, Config.Bind<bool>("Toggles", stageName.Value, false));
             }
-            mmi.AddEntryToWriteQueue("stageGap2", "10", "gap");
-            mmi.AddEntryToWriteQueue("header2", "Basic Retro Stages", "header");
-            for (int i = 0; i < stage2DNames.Length; i++)
+            this.Config.Bind<string>("Toggles", "toggles_gap2", "20", new ConfigDescription("", null, "mod_menugap"));
+            this.Config.Bind<string>("Toggles", "toggles_header_retrostages", "Basic Retro Stages", new ConfigDescription("", null, "mod_menuheader"));
+
+            foreach (var stageName in retroStagesNames)
             {
-                mmi.AddEntryToWriteQueue($"{stage2DNames[i]}", "false", "bool");
+                retroStagesConfig.Add(stageName.Key, Config.Bind<bool>("Toggles", stageName.Value, false));
             }
         }
 
-        void NewModMenuInit()
-        {
-            if ((MMI != null && !modIntegrated) || LLModMenu.ModMenu.Instance.inModSubOptions && LLModMenu.ModMenu.Instance.currentOpenMod == gameObject.name)
-            {
-                allStageAreBasic = MMI.NewGetTrueFalse("overrideAllStagesToBasic"); ;
-
-                for (int i = 0; i < stageNames.Length; i++)
-                {
-                    stagesBasic[(Stage)i + 3] = MMI.NewGetTrueFalse($"{stageNames[i]}");
-                }
-                for (int i = 0; i < stage2DNames.Length; i++)
-                {
-                    stages2DBasic[(Stage)i + 20] = MMI.NewGetTrueFalse($"{stage2DNames[i]}");
-                }
-                if (!modIntegrated) { Debug.Log("[LLBMM] AdvancedTraining: ModMenuIntegration Done"); };
-                modIntegrated = true;
-            }
-        }
-
-#endif
         bool initialStageCheck = false;
-        private bool modIntegrated;
-        private bool allStageAreBasic;
-        Dictionary<Stage, bool> stagesBasic = new Dictionary<Stage, bool>();
-        Dictionary<Stage, bool> stages2DBasic = new Dictionary<Stage, bool>();
-        static readonly string[] stageNames = new string[]
+
+        static readonly Dictionary<Stage, string> regularStagesNames = new Dictionary<Stage, string>
         {
-            "outskirts",
-            "sewers",
-            "desert",
-            "elevator",
-            "factory",
-            "subway",
-            "stadium",
-            "streets",
-            "pool",
-            "room21",
+            [Stage.OUTSKIRTS] = "outskirts",
+            [Stage.SEWERS] = "sewers",
+            [Stage.JUNKTOWN] = "desert",
+            [Stage.CONSTRUCTION] = "elevator",
+            [Stage.FACTORY] = "factory",
+            [Stage.SUBWAY] = "subway",
+            [Stage.STADIUM] = "stadium",
+            [Stage.STREETS] = "streets",
+            [Stage.POOL] = "pool",
+            [Stage.ROOM21] = "room21"
+
         };
 
-        static readonly string[] stage2DNames = new string[]
+        static readonly Dictionary<Stage, string> retroStagesNames = new Dictionary<Stage, string>
         {
-            "retroOutskirts",
-            "retroPool",
-            "retroSewers",
-            "retroRoom21",
-            "retroStreets",
-            "retroSubway",
-            "retroFactory",
+            [Stage.OUTSKIRTS_2D] = "retroOutskirts",
+            [Stage.POOL_2D] = "retroPool",
+            [Stage.SEWERS_2D] = "retroSewers",
+            [Stage.ROOM21_2D] = "retroRoom21",
+            [Stage.STREETS_2D] = "retroStreets",
+            [Stage.SUBWAY_2D] = "retroTrain",
+            [Stage.FACTORY_2D] = "retroFactory",
+
         };
-
-        public static string[] GetStageNames(bool is2d = false)
-        {
-            return is2d ? stage2DNames : stageNames;
-        }
-
-        void Update()
-        {
-            ModMenuInit();
-        }
 
         void LateUpdate()
         {
@@ -214,7 +153,7 @@ namespace BasicStages
 
         bool CheckBasicStageChoice()
         {
-            if (allStageAreBasic)
+            if (overrideAllStagesToBasic.Value)
             {
                 return true;
             }
@@ -222,11 +161,11 @@ namespace BasicStages
             {
                 try
                 {
-                    return StageBackground.BG.instance.is2D ? stages2DBasic[StageHandler.curStage] : stagesBasic[StageHandler.curStage];
+                    return StageBackground.BG.instance.is2D ? retroStagesConfig[StageHandler.curStage].Value : regularStagesConfig[StageHandler.curStage].Value;
                 }
                 catch (System.Exception)
                 {
-                    Debug.Log("[LLBMM] Stage wasn't listed");
+                    Logger.LogWarning("Stage wasn't listed:" + StageHandler.curStage);
                     return false;
                 }
             }
