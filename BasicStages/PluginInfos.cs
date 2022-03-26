@@ -42,6 +42,6 @@ namespace BasicStages
         /// Version of the plugin. Must be in form <major>.<minor>.<build>.<revision>.
         /// Major and minor versions are mandatory, but build and revision can be left unspecified.
         /// </summary>
-        public const string PLUGIN_VERSION = "2.0.0";
+        public const string PLUGIN_VERSION = "2.0.1";
     }
 }
