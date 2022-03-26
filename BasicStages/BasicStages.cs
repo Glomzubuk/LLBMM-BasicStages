@@ -1,4 +1,6 @@
-﻿using LLHandlers;
+﻿#define DEBUG
+
+using LLHandlers;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
@@ -15,6 +17,7 @@ namespace BasicStages
     [BepInProcess("LLBlaze.exe")]
     class BasicStages : BaseUnityPlugin
     {
+
         #region legacystrings
         private const string modVersion = PluginInfos.PLUGIN_VERSION;
         private const string repositoryOwner = "Daioutzu";
@@ -23,13 +26,14 @@ namespace BasicStages
 
         public static BasicStages Instance { get; private set; }
         internal static ManualLogSource Log { get; private set; }
-        public static bool InGame => World.instance != null && (DNPFJHMAIBP.HHMOGKIMBNM() == JOFJHDJHJGI.CDOFDJMLGLO || DNPFJHMAIBP.HHMOGKIMBNM() == JOFJHDJHJGI.LGILIJKMKOD);
-
-#if useAssetBundle != true
-
         internal static DirectoryInfo PluginDirectory { get; private set; }
         internal static DirectoryInfo ModdingDirectory { get; private set; }
-        private readonly static string bundleLocation = BepInEx.Utility.CombinePaths(PluginDirectory.FullName, "Bundles", "bs_materials");
+
+        public static bool InGame => World.instance != null && (DNPFJHMAIBP.HHMOGKIMBNM() == JOFJHDJHJGI.CDOFDJMLGLO || DNPFJHMAIBP.HHMOGKIMBNM() == JOFJHDJHJGI.LGILIJKMKOD);
+
+
+
+        private static string bundleLocation => BepInEx.Utility.CombinePaths(PluginDirectory.FullName, "Bundles", "bs_materials");
         private static AssetBundle uiBundle;
         public static Dictionary<string, Material> materialAssets = new Dictionary<string, Material>();
         public static Dictionary<string, Sprite> spriteAssets = new Dictionary<string, Sprite>();
@@ -62,39 +66,40 @@ namespace BasicStages
             }
         }
 
-#endif
-
         void Awake()
         {
             PluginDirectory = new DirectoryInfo(Path.GetDirectoryName(this.Info.Location));
             ModdingDirectory = ModdingFolder.GetModSubFolder(this.Info);
             Instance = this;
             Log = this.Logger;
+
+            InitModOptions();
             FileSystem.Init();
+
             LoadAssets();
-            AddModOptions();
         }
 
         void Start()
         {
             Logger.LogDebug("Started");
+            ModDependenciesUtils.RegisterToModMenu(this.Info);
         }
 
         private ConfigEntry<bool> overrideAllStagesToBasic;
         private Dictionary<Stage, ConfigEntry<bool>> regularStagesConfig = new Dictionary<Stage, ConfigEntry<bool>>();
         private Dictionary<Stage, ConfigEntry<bool>> retroStagesConfig = new Dictionary<Stage, ConfigEntry<bool>>();
-        private void AddModOptions()
+        private void InitModOptions()
         {
             overrideAllStagesToBasic = this.Config.Bind<bool>("Toggles", "overrideAllStagesToBasic", true);
-            this.Config.Bind<string>("Toggles", "toggles_gap1", "20", new ConfigDescription("", null, "mod_menugap"));
-            this.Config.Bind<string>("Toggles", "toggles_header_basicstages", "Basic Stages", new ConfigDescription("", null, "mod_menuheader"));
+            this.Config.Bind<int>("Toggles", "toggles_gap1", 20, new ConfigDescription("", null, "modmenu_gap"));
+            this.Config.Bind<string>("Toggles", "toggles_header_basicstages", "Basic Stages", new ConfigDescription("", null, "modmenu_header"));
 
             foreach (var stageName in regularStagesNames)
             {
                 regularStagesConfig.Add(stageName.Key, Config.Bind<bool>("Toggles", stageName.Value, false));
             }
-            this.Config.Bind<string>("Toggles", "toggles_gap2", "20", new ConfigDescription("", null, "mod_menugap"));
-            this.Config.Bind<string>("Toggles", "toggles_header_retrostages", "Basic Retro Stages", new ConfigDescription("", null, "mod_menuheader"));
+            this.Config.Bind<int>("Toggles", "toggles_gap2", 20, new ConfigDescription("", null, "modmenu_gap"));
+            this.Config.Bind<string>("Toggles", "toggles_header_retrostages", "Basic Retro Stages", new ConfigDescription("", null, "modmenu_header"));
 
             foreach (var stageName in retroStagesNames)
             {

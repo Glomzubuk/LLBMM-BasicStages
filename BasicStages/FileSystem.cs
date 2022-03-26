@@ -10,7 +10,7 @@ namespace BasicStages
     static class FileSystem
     {
         //static readonly string SAVE_FOLDER = Application.dataPath + @"/Saves/";
-        public static readonly string SAVE_FOLDER = BasicStages.ModdingDirectory.FullName + "/";
+        public static string SAVE_FOLDER => BasicStages.ModdingDirectory.FullName + "/";
 
         public static void Init()
         {
